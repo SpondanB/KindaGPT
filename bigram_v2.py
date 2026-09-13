@@ -88,7 +88,17 @@ class Head(nn.Module):
         v = self.value(x) # (B, T, head_size)
         out = wei @ v # (B, T, head_size)
         return out
-    
+
+class MultiHeadAttention(nn.Module):
+    """multiple heads of self attention in parallel"""
+
+    def __init__(self, num_heads, head_size):
+        super().__init__()
+        self.heads = nn.ModuleList([Head(head_size) for _ in range(num_heads)])
+
+    def forward(self, x):
+        out = torch.cat([h(x) for h in self.heads], dim=-1)
+        return out    
 
 # defining a simple Bigram language model.
 class BigramLanguageModel(nn.Module):
@@ -98,7 +108,7 @@ class BigramLanguageModel(nn.Module):
         # each token directly reads off the logits for the next token from a lookup table
         self.token_embedding_table = nn.Embedding(vocab_size, n_embd) # this is a lookup table that maps each token to a vector of size n_embd. The embedding layer takes in the vocab_size and n_embd as input and creates a matrix of size (vocab_size, n_embd) where each row corresponds to a token and each column corresponds to a dimension of the embedding space.
         self.position_embedding_table = nn.Embedding(block_size, n_embd) # this is a lookup table that maps each position in the input sequence to a vector of size n_embd. The embedding layer takes in the block_size and n_embd as input and creates a matrix of size (block_size, n_embd) where each row corresponds to a position in the input sequence and each column corresponds to a dimension of the embedding space.
-        self.sa_head = Head(n_embd)
+        self.sa_heads = MultiHeadAttention(num_heads=4, head_size=n_embd//4)
         self.lm_head = nn.Linear(n_embd, vocab_size) # this is a linear layer that takes in the embedding vector and outputs a vector of size vocab_size. The linear layer takes in the n_embd and vocab_size as input and creates a matrix of size (n_embd, vocab_size) where each row corresponds to a dimension of the embedding space and each column corresponds to a token.
 
     def forward(self, idx, targets=None):
@@ -108,7 +118,7 @@ class BigramLanguageModel(nn.Module):
         tok_embed = self.token_embedding_table(idx) # (Batch ,Time ,Channels)
         pos_embed = self.position_embedding_table(torch.arange(T, device=device)) # (Time ,Channels)
         x = tok_embed + pos_embed # (Batch ,Time ,Channels)
-        x = self.sa_head(x)
+        x = self.sa_heads(x)
         logits = self.lm_head(x) # (Batch ,Time ,Vocab_Size)
 
         if targets is None:
