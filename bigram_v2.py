@@ -123,10 +123,12 @@ class Block(nn.Module):
         head_size = n_embd // num_heads
         self.sa_heads = MultiHeadAttention(num_heads, head_size)
         self.ffwd = FeedForward(n_embd)
+        self.ln1 = nn.LayerNorm(n_embd)
+        self.ln2 = nn.LayerNorm(n_embd)
 
     def forward(self, x):
-        x = x + self.sa_heads(x)
-        x = x + self.ffwd(x)
+        x = x + self.sa_heads(self.ln1(x))
+        x = x + self.ffwd(self.ln2(x))
         return x
 
 # defining a simple Bigram language model.
@@ -141,6 +143,7 @@ class BigramLanguageModel(nn.Module):
             Block(n_embd, num_heads=4),
             Block(n_embd, num_heads=4),
             Block(n_embd, num_heads=4),
+            nn.LayerNorm(n_embd),
         )
         self.lm_head = nn.Linear(n_embd, vocab_size) # this is a linear layer that takes in the embedding vector and outputs a vector of size vocab_size. The linear layer takes in the n_embd and vocab_size as input and creates a matrix of size (n_embd, vocab_size) where each row corresponds to a dimension of the embedding space and each column corresponds to a token.
 
