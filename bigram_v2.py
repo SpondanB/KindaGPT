@@ -10,6 +10,7 @@ eval_interval = 300
 learning_rate = 1e-3
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 eval_iters = 200
+n_embd = 32
 
 
 # for reproducibility, we set the random seed to a fixed value.
@@ -67,15 +68,21 @@ def estimate_loss():
 # defining a simple Bigram language model.
 class BigramLanguageModel(nn.Module):
 
-    def __init__(self, vocab_size):
+    def __init__(self):
         super().__init__()
         # each token directly reads off the logits for the next token from a lookup table
-        self.token_embedding_table = nn.Embedding(vocab_size, vocab_size)
-
+        self.token_embedding_table = nn.Embedding(vocab_size, n_embd) # this is a lookup table that maps each token to a vector of size n_embd. The embedding layer takes in the vocab_size and n_embd as input and creates a matrix of size (vocab_size, n_embd) where each row corresponds to a token and each column corresponds to a dimension of the embedding space.
+        self.position_embedding_table = nn.Embedding(block_size, n_embd) # this is a lookup table that maps each position in the input sequence to a vector of size n_embd. The embedding layer takes in the block_size and n_embd as input and creates a matrix of size (block_size, n_embd) where each row corresponds to a position in the input sequence and each column corresponds to a dimension of the embedding space.
+        self.lm_head = nn.Linear(n_embd, vocab_size) # this is a linear layer that takes in the embedding vector and outputs a vector of size vocab_size. The linear layer takes in the n_embd and vocab_size as input and creates a matrix of size (n_embd, vocab_size) where each row corresponds to a dimension of the embedding space and each column corresponds to a token.
 
     def forward(self, idx, targets=None):
+        B, T = idx.shape
+
         # idx and targets are both (B,T) tensor of integers
-        logits  = self.token_embedding_table(idx) # (Batch ,Time ,Channels)
+        tok_embed = self.token_embedding_table(idx) # (Batch ,Time ,Channels)
+        pos_embed = self.position_embedding_table(torch.arange(T, device=device)) # (Time ,Channels)
+        x = tok_embed + pos_embed # (Batch ,Time ,Channels)
+        logits = self.lm_head(x) # (Batch ,Time ,Vocab_Size)
 
         if targets is None:
             loss = None
@@ -83,6 +90,7 @@ class BigramLanguageModel(nn.Module):
             B, T, C = logits.shape
             logits = logits.view(B * T, C)
             targets = targets.view(B * T)
+
             loss = F.cross_entropy(logits, targets) # basically we want to measure the loss between the predicted logits and the actual targets. We use cross-entropy loss for this purpose.
             # pytorch's cross_entropy function expects the input to be of shape (N, C) where N is the number of samples and C is the number of classes. So we reshape the logits and targets to be of shape (B*T, vocab_size) and (B*T,) respectively.
 
@@ -104,7 +112,7 @@ class BigramLanguageModel(nn.Module):
         return idx
 
 
-model = BigramLanguageModel(vocab_size)
+model = BigramLanguageModel()
 m = model.to(device)
 
 # setting up the PyTorch optimizer.
