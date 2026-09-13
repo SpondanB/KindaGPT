@@ -13,7 +13,7 @@ eval_iters = 200
 
 
 # for reproducibility, we set the random seed to a fixed value.
-# torch.manual_seed(1337)
+torch.manual_seed(1337)
 
 # reading the input data.
 with open('input.txt', 'r', encoding='utf-8') as f:
