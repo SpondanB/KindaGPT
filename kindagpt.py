@@ -132,7 +132,7 @@ class Block(nn.Module):
         return x
 
 # defining a simple Bigram language model.
-class BigramLanguageModel(nn.Module):
+class KGPTLanguageModel(nn.Module):
 
     def __init__(self):
         super().__init__()
@@ -187,7 +187,7 @@ class BigramLanguageModel(nn.Module):
         return idx
 
 
-model = BigramLanguageModel()
+model = KGPTLanguageModel()
 m = model.to(device)
 
 # setting up the PyTorch optimizer.
