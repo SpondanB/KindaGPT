@@ -100,6 +100,19 @@ class MultiHeadAttention(nn.Module):
         out = torch.cat([h(x) for h in self.heads], dim=-1)
         return out    
 
+class FeedForward(nn.Module):
+    """a simple linear layer followed by a non-linearity"""
+
+    def __init__(self, n_embd):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(n_embd, n_embd),
+            nn.ReLU(),
+        )
+
+    def forward(self, x):
+        return self.net(x)
+
 # defining a simple Bigram language model.
 class BigramLanguageModel(nn.Module):
 
@@ -109,6 +122,7 @@ class BigramLanguageModel(nn.Module):
         self.token_embedding_table = nn.Embedding(vocab_size, n_embd) # this is a lookup table that maps each token to a vector of size n_embd. The embedding layer takes in the vocab_size and n_embd as input and creates a matrix of size (vocab_size, n_embd) where each row corresponds to a token and each column corresponds to a dimension of the embedding space.
         self.position_embedding_table = nn.Embedding(block_size, n_embd) # this is a lookup table that maps each position in the input sequence to a vector of size n_embd. The embedding layer takes in the block_size and n_embd as input and creates a matrix of size (block_size, n_embd) where each row corresponds to a position in the input sequence and each column corresponds to a dimension of the embedding space.
         self.sa_heads = MultiHeadAttention(num_heads=4, head_size=n_embd//4)
+        self.ffwd = FeedForward(n_embd)
         self.lm_head = nn.Linear(n_embd, vocab_size) # this is a linear layer that takes in the embedding vector and outputs a vector of size vocab_size. The linear layer takes in the n_embd and vocab_size as input and creates a matrix of size (n_embd, vocab_size) where each row corresponds to a dimension of the embedding space and each column corresponds to a token.
 
     def forward(self, idx, targets=None):
@@ -119,6 +133,7 @@ class BigramLanguageModel(nn.Module):
         pos_embed = self.position_embedding_table(torch.arange(T, device=device)) # (Time ,Channels)
         x = tok_embed + pos_embed # (Batch ,Time ,Channels)
         x = self.sa_heads(x)
+        x = self.ffwd(x)
         logits = self.lm_head(x) # (Batch ,Time ,Vocab_Size)
 
         if targets is None:
