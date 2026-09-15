@@ -448,7 +448,7 @@ Understanding these dimensions makes the mechanics of self-attention much easier
 ### 1. Install dependencies
 
 ```bash
-pip install torch
+pip install -r requirements.txt
 ```
 
 ### 2. Prepare the dataset
