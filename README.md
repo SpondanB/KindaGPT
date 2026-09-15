@@ -115,9 +115,11 @@ Value (V)
 ```
 
 The attention scores are calculated using:
+
 $$
 \text{Attention}(Q,K,V) = \text{softmax} \left( \frac{QK^T}{\sqrt{d_k}} \right)V
 $$
+
 In the implementation:
 
 ```python
