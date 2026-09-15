@@ -251,6 +251,7 @@ Conceptually:
 $$
 L=-\sum_i y_i \log(\hat{y}_i)
 $$
+
 The model adjusts its parameters to increase the probability assigned to the correct next character.
 
 ---
